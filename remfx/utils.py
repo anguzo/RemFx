@@ -125,6 +125,8 @@ def select_random_chunk(
 ) -> List[torch.Tensor]:
     """Select random chunk of size chunk_size (samples) from an audio file."""
     audio, sr = torchaudio.load(audio_file)
+    if sr == sample_rate and audio.shape[-1] == chunk_size:
+        return audio
     new_chunk_size = int(chunk_size * (sr / sample_rate))
     if new_chunk_size >= audio.shape[-1]:
         return None
