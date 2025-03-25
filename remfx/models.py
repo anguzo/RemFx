@@ -317,7 +317,7 @@ class FXClassifier(pl.LightningModule):
         self.lr_weight_decay = lr_weight_decay
         self.sample_rate = sample_rate
         self.network = network
-        self.effects = ["Reverb", "Chorus", "Delay", "Distortion", "Compressor"]
+        self.effects = ["Compressor", "Distortion", "Chorus", "Delay", "Reverb"]
         self.mixup = mixup
         self.label_smoothing = label_smoothing
 
