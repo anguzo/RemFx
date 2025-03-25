@@ -27,7 +27,7 @@ def locate_files(root: str, mode: str):
     if os.path.isdir(mode_path):
         file_list = glob.glob(os.path.join(mode_path, "*.wav"))
         print(f"Found {len(file_list)} files in {root} {mode}.")
-    return file_list
+    return [file_list]
 
 
 def parallel_process_effects(
