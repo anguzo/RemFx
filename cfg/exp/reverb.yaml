@@ -1,6 +1,6 @@
 # @package _global_
 defaults:
-  - override /model: dcunet
+  - override /model: demucs
   - override /effects: all
 seed: 12345
 sample_rate: 44100
