@@ -3,9 +3,9 @@ defaults:
   - override /model: demucs
   - override /effects: all
 seed: 12345
-sample_rate: 48000
-chunk_size: 262144 # 5.5s
-logs_dir: "./logs"
+sample_rate: 44100
+chunk_size: 242550 # 5.5s
+logs_dir: "./lightning_logs"
 render_files: True
 render_root: "./data"
 accelerator: null

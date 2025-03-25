@@ -6,9 +6,9 @@ defaults:
 
 seed: 12345
 train: True
-sample_rate: 48000
-chunk_size: 262144 # 5.5s
-logs_dir: "./logs"
+sample_rate: 44100
+chunk_size: 242550 # 5.5s
+logs_dir: "./lightning_logs"
 render_files: True
 render_root: "./data"
 accelerator: null
@@ -36,7 +36,7 @@ callbacks:
     save_last: True # additionaly always save model from last epoch
     mode: "min" # can be "max" or "min"
     verbose: False
-    dirpath: ${logs_dir}/ckpts/${now:%Y-%m-%d-%H-%M-%S}
+    dirpath: ${logs_dir}/${now:%Y-%m-%d-%H-%M-%S}/ckpts
     filename: "{epoch:02d}-{valid_loss:.3f}"
   learning_rate_monitor:
     _target_: pytorch_lightning.callbacks.LearningRateMonitor

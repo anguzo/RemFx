@@ -3,16 +3,16 @@ defaults:
   - override /model: cls_panns_48k_specaugment
   - override /effects: all
 seed: 12345
-sample_rate: 48000
-chunk_size: 262144 # 5.5s
-logs_dir: "./logs"
+sample_rate: 44100
+chunk_size: 242550 # 5.5s
+logs_dir: "./lightning_logs"
 render_files: True
 
 accelerator: "gpu"
 log_audio: False
 # Effects
-num_kept_effects: [0,0] # [min, max]
-num_removed_effects: [0,5] # [min, max]
+num_kept_effects: [0, 0] # [min, max]
+num_removed_effects: [0, 5] # [min, max]
 shuffle_kept_effects: True
 shuffle_removed_effects: True
 num_classes: 5
@@ -31,13 +31,13 @@ datamodule:
 callbacks:
   model_checkpoint:
     _target_: pytorch_lightning.callbacks.ModelCheckpoint
-    monitor: "valid_avg_acc_epoch"   # name of the logged metric which determines when model is improving
-    save_top_k: 1           # save k best models (determined by above metric)
-    save_last: True         # additionaly always save model from last epoch
-    mode: "max"             # can be "max" or "min"
+    monitor: "valid_avg_acc_epoch" # name of the logged metric which determines when model is improving
+    save_top_k: 1 # save k best models (determined by above metric)
+    save_last: True # additionaly always save model from last epoch
+    mode: "max" # can be "max" or "min"
     verbose: True
-    dirpath: ${logs_dir}/ckpts/${now:%Y-%m-%d-%H-%M-%S}
-    filename: '{epoch:02d}-{valid_avg_acc_epoch:.3f}'
+    dirpath: ${logs_dir}/${now:%Y-%m-%d-%H-%M-%S}/ckpts
+    filename: "{epoch:02d}-{valid_avg_acc_epoch:.3f}"
   learning_rate_monitor:
     _target_: pytorch_lightning.callbacks.LearningRateMonitor
     logging_interval: "step"
@@ -45,7 +45,6 @@ callbacks:
   #  _target_: remfx.callbacks.AudioCallback
   #  sample_rate: ${sample_rate}
   #  log_audio: ${log_audio}
-
 
 trainer:
   _target_: pytorch_lightning.Trainer
