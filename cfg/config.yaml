@@ -15,8 +15,8 @@ accelerator: null
 log_audio: True
 
 # Effects
-num_kept_effects: [2,2] # [min, max]
-num_removed_effects: [2,2] # [min, max]
+num_kept_effects: [2, 2] # [min, max]
+num_removed_effects: [2, 2] # [min, max]
 shuffle_kept_effects: True
 shuffle_removed_effects: False
 num_classes: 5
@@ -31,13 +31,13 @@ effects_to_remove:
 callbacks:
   model_checkpoint:
     _target_: pytorch_lightning.callbacks.ModelCheckpoint
-    monitor: "valid_loss"   # name of the logged metric which determines when model is improving
-    save_top_k: 1           # save k best models (determined by above metric)
-    save_last: True         # additionaly always save model from last epoch
-    mode: "min"             # can be "max" or "min"
+    monitor: "valid_loss" # name of the logged metric which determines when model is improving
+    save_top_k: 1 # save k best models (determined by above metric)
+    save_last: True # additionaly always save model from last epoch
+    mode: "min" # can be "max" or "min"
     verbose: False
     dirpath: ${logs_dir}/ckpts/${now:%Y-%m-%d-%H-%M-%S}
-    filename: '{epoch:02d}-{valid_loss:.3f}'
+    filename: "{epoch:02d}-{valid_loss:.3f}"
   learning_rate_monitor:
     _target_: pytorch_lightning.callbacks.LearningRateMonitor
     logging_interval: "step"
@@ -105,7 +105,6 @@ datamodule:
   num_workers: 8
   pin_memory: True
   persistent_workers: True
-
 
 trainer:
   _target_: pytorch_lightning.Trainer

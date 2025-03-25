@@ -35,11 +35,9 @@ removal models and then leveraged an audio effect classification model to dynami
 ```
 git clone https://github.com/mhrice/RemFx.git
 cd RemFx
-git submodule update --init --recursive
-pip install -e . ./umx
-pip install --no-deps hearbaseline
+conda create -f env.yaml
+conda activate remfx
 ```
-Due to incompatabilities with hearbaseline's dependencies (namely numpy/numba) and our other packages, we need to install hearbaseline with no dependencies.
 <b>Please run the setup code before running any scripts.</b>
 All scripts should be launched from the top level after installing.
 
@@ -114,13 +112,7 @@ You can also create a custom experiment by creating a new experiment file in `cf
 By default, training uses the Pytorch Lightning CSV Logger
 Metrics and hyperparams will be logged in `./lightning_logs/{timestamp}`
 
-[Weights and Biases](https://wandb.ai/) logging can also be used, and will log audio during training and testing. To use Weights and Biases, set `logger=wandb` in the config or command-line. Make sure you have an account and are logged in.
-
-Then set the project and entity:
-```
-export WANDB_PROJECT={desired_wandb_project}
-export WANDB_ENTITY={your_wandb_username}
-```
+Tensorboard logging can also be used, and will log audio during training and testing. To use Tensorboard, set `logger=tensorboard` in the config or command-line.
 
 The checkpoints will be saved in `./logs/ckpts/{timestamp}`
 
@@ -217,20 +209,13 @@ Some relevant dataset/training parameters descriptions
 - `render_files=True/False` Render files. Disable to skip rendering stage (default: True).
 - `render_root={path/to/dir}`. Root directory to render files to (default: ./data).
 - `datamodule.train_batch_size={batch_size}`. Change batch size (default: varies).
-- `logger=wandb`. Use weights and biases logger (default: csv). Ensure you set the wandb environment variables (see training section).
+- `logger=tensorboard`. Use tensorboard logger (default: csv). 
 
 ### Effect Removal Models
-- `umx`
 - `demucs`
-- `tcn`
-- `dcunet`
-- `dptnet`
 
 ### Effect Classification Models
-- `cls_vggish`
 - `cls_panns_pt`
-- `cls_wav2vec2`
-- `cls_wav2clip`
 
 ### Effects
 - `delay`

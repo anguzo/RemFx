@@ -1,9 +1,9 @@
-from pytorch_lightning.callbacks import Callback
 import pytorch_lightning as pl
-from einops import rearrange
 import torch
-import wandb
+from einops import rearrange
+from pytorch_lightning.callbacks import Callback
 from torch import Tensor
+
 from remfx import effects
 
 ALL_EFFECTS = effects.Pedalboard_Effects
@@ -26,20 +26,6 @@ class AudioCallback(Callback):
             input_samples = rearrange(x, "b c t -> c (b t)").unsqueeze(0)
             target_samples = rearrange(y, "b c t -> c (b t)").unsqueeze(0)
 
-            log_wandb_audio_batch(
-                logger=trainer.logger,
-                id="input_effected_audio",
-                samples=input_samples.cpu(),
-                sampling_rate=self.sample_rate,
-                caption="Training Data",
-            )
-            log_wandb_audio_batch(
-                logger=trainer.logger,
-                id="target_audio",
-                samples=target_samples.cpu(),
-                sampling_rate=self.sample_rate,
-                caption="Target Data",
-            )
             self.log_train_audio = False
 
     def on_validation_batch_start(self, trainer, pl_module, batch, batch_idx):
@@ -69,40 +55,57 @@ class AudioCallback(Callback):
             silence = torch.zeros_like(x)
             silence = silence[:, : self.sample_rate * 2]
 
-            concat_samples = torch.cat([y, silence, x, silence, target], dim=-1)
-            log_wandb_audio_batch(
+            log_tensorboard_audio_batch(
                 logger=trainer.logger,
-                id="prediction_input_target",
-                samples=concat_samples.cpu(),
-                sampling_rate=self.sample_rate,
-                caption=f"Epoch {trainer.current_epoch}",
+                x=x,
+                y=target,
+                y_pred=y,
+                sample_rate=self.sample_rate,
+                max_items=10,
+                global_step=trainer.current_epoch,
             )
 
     def on_test_batch_start(self, *args):
         self.on_validation_batch_start(*args)
 
-
-def log_wandb_audio_batch(
-    logger: pl.loggers.WandbLogger,
-    id: str,
-    samples: Tensor,
-    sampling_rate: int,
-    caption: str = "",
+def log_tensorboard_audio_batch(
+    logger: pl.loggers.TensorBoardLogger,
+    x: Tensor,
+    y: Tensor,
+    y_pred: Tensor,
+    sample_rate: int,
     max_items: int = 10,
+    global_step: int = 0,
 ):
-    if not isinstance(logger, pl.loggers.WandbLogger):
+    if not isinstance(logger, pl.loggers.TensorBoardLogger):
         return
-    num_items = samples.shape[0]
-    samples = rearrange(samples, "b c t -> b t c")
-    for idx in range(num_items):
-        if idx >= max_items:
-            break
-        logger.experiment.log(
-            {
-                f"{id}_{idx}": wandb.Audio(
-                    samples[idx].cpu().numpy(),
-                    caption=caption,
-                    sample_rate=sampling_rate,
-                )
-            }
+
+    max_items = min(max_items, x.shape[0])
+
+    for i in range(max_items):
+        wet = x[i]
+
+        logger.experiment.add_audio(
+            tag=f"valid_example_{i}/x_(wet)_audio",
+            snd_tensor=wet.cpu(),
+            global_step=global_step,
+            sample_rate=sample_rate,
+        )
+
+        dry = y[i]
+
+        logger.experiment.add_audio(
+            tag=f"valid_example_{i}/y_(dry)_audio",
+            snd_tensor=dry.cpu(),
+            global_step=global_step,
+            sample_rate=sample_rate,
+        )
+    
+        recovered = y_pred[i]
+
+        logger.experiment.add_audio(
+            tag=f"valid_example_{i}/y_pred_(recovered)_audio",
+            snd_tensor=recovered.cpu(),
+            global_step=global_step,
+            sample_rate=sample_rate,
         )

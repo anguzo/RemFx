@@ -1,12 +1,13 @@
 from pathlib import Path
-from setuptools import setup, find_packages
+
+from setuptools import find_packages, setup
 
 NAME = "remfx"
 DESCRIPTION = "Universal audio effect removal"
 URL = "https://github.com/mhrice/RemFx"
 EMAIL = "m.rice@se22.qmul.ac.uk"
 AUTHOR = "Matthew Rice"
-REQUIRES_PYTHON = ">=3.8.0"
+REQUIRES_PYTHON = ">=3.12.0"
 VERSION = "0.0.1"
 
 HERE = Path(__file__).parent
@@ -29,30 +30,20 @@ setup(
     url=URL,
     packages=find_packages(),
     install_requires=[
-        "torch>=1.11.0",
-        "torchaudio>=0.13.0",
-        "functorch",
+        "torch>=2.5.1",
+        "torchaudio>=2.5.1",
         "scipy",
         "numpy",
         "torchvision",
-        "pytorch-lightning>=2.0.0",
-        "numba",
-        "wandb",
+        "lightning",
         "einops",
         "hydra-core",
         "auraloss",
         "pyloudnorm",
         "pedalboard",
-        "asteroid",
         "librosa",
-        "speechbrain",
-        "torchcrepe",
-        "torchopenl3",
-        "tensorflow",
-        "transformers",
-        "torchmetrics>=1.0",
-        "wav2clip_hear @ git+https://github.com/hohsiangwu/wav2clip-hear.git",
-        "panns_hear @ git+https://github.com/qiuqiangkong/HEAR2021_Challenge_PANNs",
+        "torchmetrics",
+        "tensorboard"
     ],
     include_package_data=True,
     license="Apache License 2.0",

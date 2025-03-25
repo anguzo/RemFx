@@ -1,12 +1,13 @@
+import collections.abc
 import logging
 from typing import List, Tuple
+
 import pytorch_lightning as pl
-from omegaconf import DictConfig
-from pytorch_lightning.utilities import rank_zero_only
 import torch
 import torchaudio
+from omegaconf import DictConfig
+from pytorch_lightning.utilities import rank_zero_only
 from torch import nn
-import collections.abc
 
 
 def get_logger(name=__name__) -> logging.Logger:
@@ -73,6 +74,8 @@ def log_hyperparameters(
         hparams["callbacks"] = config["callbacks"]
 
     if isinstance(logger, pl.loggers.CSVLogger):
+        logger.log_hyperparams(hparams)
+    elif isinstance(logger, pl.loggers.TensorBoardLogger):
         logger.log_hyperparams(hparams)
     else:
         logger.experiment.config.update(hparams)

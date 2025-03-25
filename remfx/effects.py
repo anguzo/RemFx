@@ -1,23 +1,22 @@
-import torch
-import torchaudio
+from typing import List
+
 import numpy as np
+import pyloudnorm as pyln
 import scipy.signal
 import scipy.stats
-import pyloudnorm as pyln
-from torchvision.transforms import Compose, RandomApply
-
-
-from typing import List
+import torch
+import torchaudio
 from pedalboard import (
-    Pedalboard,
     Chorus,
-    Reverb,
     Compressor,
-    Phaser,
     Delay,
     Distortion,
     Limiter,
+    Pedalboard,
+    Phaser,
+    Reverb,
 )
+from torchvision.transforms import Compose, RandomApply
 
 __all__ = []
 

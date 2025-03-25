@@ -1,16 +1,12 @@
 import torch
-import torchaudio
 import torch.nn as nn
-import hearbaseline
-import hearbaseline.vggish
-import hearbaseline.wav2vec2
-
-import wav2clip_hear
-import panns_hear
-
-
 import torch.nn.functional as F
+import torchaudio
+
 from remfx.utils import init_bn, init_layer
+
+from .panns import get_scene_embeddings as panns_get_scene_embeddings
+from .panns import load_model as panns_load_model
 
 
 class PANNs(torch.nn.Module):
@@ -19,7 +15,7 @@ class PANNs(torch.nn.Module):
     ) -> None:
         super().__init__()
         self.num_classes = num_classes
-        self.model = panns_hear.load_model("hear2021-panns_hear.pth")
+        self.model = panns_load_model("hear2021-panns_hear.pth")
         self.resample = torchaudio.transforms.Resample(
             orig_freq=sample_rate, new_freq=32000
         )
@@ -34,99 +30,8 @@ class PANNs(torch.nn.Module):
     def forward(self, x: torch.Tensor, **kwargs):
         with torch.no_grad():
             x = self.resample(x)
-            embed = panns_hear.get_scene_embeddings(x.view(x.shape[0], -1), self.model)
+            embed = panns_get_scene_embeddings(x.view(x.shape[0], -1), self.model)
         return self.proj(embed)
-
-
-class Wav2CLIP(nn.Module):
-    def __init__(
-        self,
-        num_classes: int,
-        sample_rate: float,
-        hidden_dim: int = 256,
-    ) -> None:
-        super().__init__()
-        self.num_classes = num_classes
-        self.model = wav2clip_hear.load_model("")
-        self.resample = torchaudio.transforms.Resample(
-            orig_freq=sample_rate, new_freq=16000
-        )
-        self.proj = torch.nn.Sequential(
-            torch.nn.Linear(512, hidden_dim),
-            torch.nn.ReLU(),
-            torch.nn.Linear(hidden_dim, hidden_dim),
-            torch.nn.ReLU(),
-            torch.nn.Linear(hidden_dim, num_classes),
-        )
-
-    def forward(self, x: torch.Tensor, **kwargs):
-        with torch.no_grad():
-            x = self.resample(x)
-            embed = wav2clip_hear.get_scene_embeddings(
-                x.view(x.shape[0], -1), self.model
-            )
-        return self.proj(embed)
-
-
-class VGGish(nn.Module):
-    def __init__(
-        self,
-        num_classes: int,
-        sample_rate: float,
-        hidden_dim: int = 256,
-    ):
-        super().__init__()
-        self.num_classes = num_classes
-        self.resample = torchaudio.transforms.Resample(
-            orig_freq=sample_rate, new_freq=16000
-        )
-        self.model = hearbaseline.vggish.load_model()
-        self.proj = torch.nn.Sequential(
-            torch.nn.Linear(128, hidden_dim),
-            torch.nn.ReLU(),
-            torch.nn.Linear(hidden_dim, hidden_dim),
-            torch.nn.ReLU(),
-            torch.nn.Linear(hidden_dim, num_classes),
-        )
-
-    def forward(self, x: torch.Tensor, **kwargs):
-        with torch.no_grad():
-            x = self.resample(x)
-            embed = hearbaseline.vggish.get_scene_embeddings(
-                x.view(x.shape[0], -1), self.model
-            )
-        return self.proj(embed)
-
-
-class wav2vec2(nn.Module):
-    def __init__(
-        self,
-        num_classes: int,
-        sample_rate: float,
-        hidden_dim: int = 256,
-    ):
-        super().__init__()
-        self.num_classes = num_classes
-        self.resample = torchaudio.transforms.Resample(
-            orig_freq=sample_rate, new_freq=16000
-        )
-        self.model = hearbaseline.wav2vec2.load_model()
-        self.proj = torch.nn.Sequential(
-            torch.nn.Linear(1024, hidden_dim),
-            torch.nn.ReLU(),
-            torch.nn.Linear(hidden_dim, hidden_dim),
-            torch.nn.ReLU(),
-            torch.nn.Linear(hidden_dim, num_classes),
-        )
-
-    def forward(self, x: torch.Tensor, **kwargs):
-        with torch.no_grad():
-            x = self.resample(x)
-            embed = hearbaseline.wav2vec2.get_scene_embeddings(
-                x.view(x.shape[0], -1), self.model
-            )
-        return self.proj(embed)
-
 
 # adapted from https://github.com/qiuqiangkong/audioset_tagging_cnn/blob/master/pytorch/models.py
 

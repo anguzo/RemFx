@@ -1,20 +1,17 @@
-import torch
+import random
+
 import numpy as np
-import torchmetrics
 import pytorch_lightning as pl
+import torch
+import torchmetrics
+from auraloss.freq import MultiResolutionSTFTLoss
+from auraloss.time import SISDRLoss
 from torch import Tensor, nn
 from torchaudio.models import HDemucs
-from auraloss.time import SISDRLoss
-from auraloss.freq import MultiResolutionSTFTLoss
-from umx.openunmix.model import OpenUnmix, Separator
 
-from remfx.utils import spectrogram
-from remfx.tcn import TCN
-from remfx.utils import causal_crop
 from remfx import effects
 from remfx.classifier import Cnn14
-import asteroid
-import random
+from remfx.utils import causal_crop
 
 ALL_EFFECTS = effects.Pedalboard_Effects
 
@@ -256,54 +253,6 @@ class RemFX(pl.LightningModule):
         return loss
 
 
-class OpenUnmixModel(nn.Module):
-    def __init__(
-        self,
-        n_fft: int = 2048,
-        hop_length: int = 512,
-        n_channels: int = 1,
-        alpha: float = 0.3,
-        sample_rate: int = 22050,
-    ):
-        super().__init__()
-        self.n_channels = n_channels
-        self.n_fft = n_fft
-        self.hop_length = hop_length
-        self.alpha = alpha
-        window = torch.hann_window(n_fft)
-        self.register_buffer("window", window)
-
-        self.num_bins = self.n_fft // 2 + 1
-        self.sample_rate = sample_rate
-        self.model = OpenUnmix(
-            nb_channels=self.n_channels,
-            nb_bins=self.num_bins,
-        )
-        self.separator = Separator(
-            target_models={"other": self.model},
-            nb_channels=self.n_channels,
-            sample_rate=self.sample_rate,
-            n_fft=self.n_fft,
-            n_hop=self.hop_length,
-        )
-        self.mrstftloss = MultiResolutionSTFTLoss(
-            n_bins=self.num_bins, sample_rate=self.sample_rate
-        )
-        self.l1loss = nn.L1Loss()
-
-    def forward(self, batch):
-        x, target = batch
-        X = spectrogram(x, self.window, self.n_fft, self.hop_length, self.alpha)
-        Y = self.model(X)
-        sep_out = self.separator(x).squeeze(1)
-        loss = self.mrstftloss(sep_out, target) + self.l1loss(sep_out, target) * 100
-
-        return loss, sep_out
-
-    def sample(self, x: Tensor) -> Tensor:
-        return self.separator(x).squeeze(1)
-
-
 class DemucsModel(nn.Module):
     def __init__(self, sample_rate, **kwargs) -> None:
         super().__init__()
@@ -322,73 +271,6 @@ class DemucsModel(nn.Module):
 
     def sample(self, x: Tensor) -> Tensor:
         return self.model(x).squeeze(1)
-
-
-class DPTNetModel(nn.Module):
-    def __init__(self, sample_rate, num_bins, **kwargs):
-        super().__init__()
-        self.model = asteroid.models.dptnet.DPTNet(**kwargs)
-        self.num_bins = num_bins
-        self.mrstftloss = MultiResolutionSTFTLoss(
-            n_bins=self.num_bins, sample_rate=sample_rate
-        )
-        self.l1loss = nn.L1Loss()
-
-    def forward(self, batch):
-        x, target = batch
-        output = self.model(x.squeeze(1))
-        loss = self.mrstftloss(output, target) + self.l1loss(output, target) * 100
-        return loss, output
-
-    def sample(self, x: Tensor) -> Tensor:
-        return self.model(x.squeeze(1))
-
-
-class DCUNetModel(nn.Module):
-    def __init__(self, sample_rate, num_bins, **kwargs):
-        super().__init__()
-        self.model = asteroid.models.DCUNet(**kwargs)
-        self.mrstftloss = MultiResolutionSTFTLoss(
-            n_bins=num_bins, sample_rate=sample_rate
-        )
-        self.l1loss = nn.L1Loss()
-
-    def forward(self, batch):
-        x, target = batch
-        output = self.model(x.squeeze(1))  # B x T
-        # Crop target to match output
-        if output.shape[-1] < target.shape[-1]:
-            target = causal_crop(target, output.shape[-1])
-        loss = self.mrstftloss(output, target) + self.l1loss(output, target) * 100
-        return loss, output
-
-    def sample(self, x: Tensor) -> Tensor:
-        output = self.model(x.squeeze(1))  # B x T
-        return output
-
-
-class TCNModel(nn.Module):
-    def __init__(self, sample_rate, num_bins, **kwargs):
-        super().__init__()
-        self.model = TCN(**kwargs)
-        self.mrstftloss = MultiResolutionSTFTLoss(
-            n_bins=num_bins, sample_rate=sample_rate
-        )
-        self.l1loss = nn.L1Loss()
-
-    def forward(self, batch):
-        x, target = batch
-        output = self.model(x)  # B x 1 x T
-        # Crop target to match output
-        if output.shape[-1] < target.shape[-1]:
-            target = causal_crop(target, output.shape[-1])
-        loss = self.mrstftloss(output, target) + self.l1loss(output, target) * 100
-        return loss, output
-
-    def sample(self, x: Tensor) -> Tensor:
-        output = self.model(x)  # B x 1 x T
-        return output
-
 
 def mixup(x: torch.Tensor, y: torch.Tensor, alpha: float = 1.0):
     """Mixup data augmentation for time-domain signals.
