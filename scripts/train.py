@@ -1,5 +1,9 @@
 import hydra
 import pytorch_lightning as pl
+import torch
+
+torch.set_float32_matmul_precision("high")
+
 from omegaconf import DictConfig
 
 import remfx.utils as utils
