@@ -21,89 +21,12 @@ STFT_THRESH = 1e-3
 ALL_EFFECTS = effect_lib.Pedalboard_Effects
 
 
-vocalset_splits = {
-    "train": [
-        "male1",
-        "male2",
-        "male3",
-        "male4",
-        "male5",
-        "male6",
-        "male7",
-        "male8",
-        "male9",
-        "female1",
-        "female2",
-        "female3",
-        "female4",
-        "female5",
-        "female6",
-        "female7",
-    ],
-    "val": ["male10", "female8"],
-    "test": ["male11", "female9"],
-}
-
-guitarset_splits = {"train": ["00", "01", "02", "03"], "val": ["04"], "test": ["05"]}
-dsd_100_splits = {
-    "train": ["train"],
-    "val": ["val"],
-    "test": ["test"],
-}
-idmt_drums_splits = {
-    "train": ["WaveDrum02", "TechnoDrum01"],
-    "val": ["RealDrum01"],
-    "test": ["TechnoDrum02", "WaveDrum01"],
-}
-
-
 def locate_files(root: str, mode: str):
     file_list = []
-    # ------------------------- VocalSet -------------------------
-    vocalset_dir = os.path.join(root, "VocalSet1-2")
-    if os.path.isdir(vocalset_dir):
-        # find all singer directories
-        singer_dirs = glob.glob(os.path.join(vocalset_dir, "data_by_singer", "*"))
-        singer_dirs = [
-            sd for sd in singer_dirs if os.path.basename(sd) in vocalset_splits[mode]
-        ]
-        files = []
-        for singer_dir in singer_dirs:
-            files += glob.glob(os.path.join(singer_dir, "**", "**", "*.wav"))
-        print(f"Found {len(files)} files in VocalSet {mode}.")
-        file_list.append(sorted(files))
-    # ------------------------- GuitarSet -------------------------
-    guitarset_dir = os.path.join(root, "audio_mono-mic")
-    if os.path.isdir(guitarset_dir):
-        files = glob.glob(os.path.join(guitarset_dir, "*.wav"))
-        files = [
-            f
-            for f in files
-            if os.path.basename(f).split("_")[0] in guitarset_splits[mode]
-        ]
-        print(f"Found {len(files)} files in GuitarSet {mode}.")
-        file_list.append(sorted(files))
-    # ------------------------- DSD100 ---------------------------------
-    dsd_100_dir = os.path.join(root, "DSD100/DSD100")
-    if os.path.isdir(dsd_100_dir):
-        files = glob.glob(
-            os.path.join(dsd_100_dir, mode, "**", "*.wav"),
-            recursive=True,
-        )
-        file_list.append(sorted(files))
-        print(f"Found {len(files)} files in DSD100 {mode}.")
-    # ------------------------- IDMT-SMT-DRUMS -------------------------
-    idmt_smt_drums_dir = os.path.join(root, "IDMT-SMT-DRUMS-V2")
-    if os.path.isdir(idmt_smt_drums_dir):
-        files = glob.glob(os.path.join(idmt_smt_drums_dir, "audio", "*.wav"))
-        files = [
-            f
-            for f in files
-            if os.path.basename(f).split("_")[0] in idmt_drums_splits[mode]
-        ]
-        file_list.append(sorted(files))
-        print(f"Found {len(files)} files in IDMT-SMT-Drums {mode}.")
-
+    mode_path = os.path.join(root, mode)
+    if os.path.isdir(mode_path):
+        file_list = glob.glob(os.path.join(mode_path, "*.wav"))
+        print(f"Found {len(file_list)} files in {root} {mode}.")
     return file_list
 
 
@@ -148,9 +71,11 @@ def parallel_process_effects(
     r1 = num_kept_effects[0]
     r2 = num_kept_effects[1]
     num_kept_effects = torch.round((r1 - r2) * torch.rand(1) + r2).int()
-    effect_indices = effect_indices[:num_kept_effects]
+    start_idx = random.randint(0, max(0, len(effect_indices) - num_kept_effects))
+    effect_indices = effect_indices[start_idx:start_idx + num_kept_effects]
     # Index in effect settings
     effect_names_to_apply = [effects_to_keep[i] for i in effect_indices]
+    # print("effect_to_apply", effect_names_to_apply)
     effects_to_apply = [effects[i] for i in effect_names_to_apply]
     # Apply
     dry_labels = []
@@ -169,9 +94,11 @@ def parallel_process_effects(
     r1 = num_removed_effects[0]
     r2 = num_removed_effects[1]
     num_removed_effects = torch.round((r1 - r2) * torch.rand(1) + r2).int()
-    effect_indices = effect_indices[:num_removed_effects]
+    start_idx = random.randint(0, max(0, len(effect_indices) - num_removed_effects))
+    effect_indices = effect_indices[start_idx:start_idx + num_removed_effects]
     # Index in effect settings
     effect_names_to_apply = [effects_to_remove[i] for i in effect_indices]
+    # print("effect_to_remove", effect_names_to_apply)
     effects_to_apply = [effects[i] for i in effect_names_to_apply]
     # Apply
     wet_labels = []
@@ -264,9 +191,11 @@ class DynamicEffectDataset(Dataset):
         r1 = self.num_kept_effects[0]
         r2 = self.num_kept_effects[1]
         num_kept_effects = torch.round((r1 - r2) * torch.rand(1) + r2).int()
-        effect_indices = effect_indices[:num_kept_effects]
+        start_idx = random.randint(0, max(0, len(effect_indices) - num_kept_effects))
+        effect_indices = effect_indices[start_idx:start_idx + num_kept_effects]
         # Index in effect settings
         effect_names_to_apply = [self.effects_to_keep[i] for i in effect_indices]
+        # print("effect_to_apply", effect_names_to_apply)
         effects_to_apply = [self.effects[i] for i in effect_names_to_apply]
         # Apply
         dry_labels = []
@@ -285,9 +214,11 @@ class DynamicEffectDataset(Dataset):
         r1 = self.num_removed_effects[0]
         r2 = self.num_removed_effects[1]
         num_removed_effects = torch.round((r1 - r2) * torch.rand(1) + r2).int()
-        effect_indices = effect_indices[:num_removed_effects]
+        start_idx = random.randint(0, max(0, len(effect_indices) - num_removed_effects))
+        effect_indices = effect_indices[start_idx:start_idx + num_removed_effects]
         # Index in effect settings
-        effect_names_to_apply = [self.effects_to_remove[i] for i in effect_indices]
+        effect_names_to_apply = [self.effects_to_remove[::-1][i] for i in effect_indices]
+        # print("effect_to_remove", effect_names_to_apply)
         effects_to_apply = [self.effects[i] for i in effect_names_to_apply]
         # Apply
         wet_labels = []
@@ -526,13 +457,15 @@ class EffectDataset(Dataset):
             effect_indices = torch.randperm(len(self.effects_to_keep))
         else:
             effect_indices = torch.arange(len(self.effects_to_keep))
-
+        
         r1 = self.num_kept_effects[0]
         r2 = self.num_kept_effects[1]
         num_kept_effects = torch.round((r1 - r2) * torch.rand(1) + r2).int()
-        effect_indices = effect_indices[:num_kept_effects]
+        start_idx = random.randint(0, max(0, len(effect_indices) - num_kept_effects))
+        effect_indices = effect_indices[start_idx:start_idx + num_kept_effects]
         # Index in effect settings
         effect_names_to_apply = [self.effects_to_keep[i] for i in effect_indices]
+        # print("effect_to_apply", effect_names_to_apply)
         effects_to_apply = [self.effects[i] for i in effect_names_to_apply]
         # stft comparison
         stft = 0
@@ -543,7 +476,7 @@ class EffectDataset(Dataset):
                 # Normalize in-between effects
                 dry = self.normalize(effect(dry))
                 dry_labels.append(ALL_EFFECTS.index(type(effect)))
-
+                
             # Apply effects_to_remove
             # Shuffle effects if specified
             if self.shuffle_removed_effects:
@@ -554,9 +487,11 @@ class EffectDataset(Dataset):
             r1 = self.num_removed_effects[0]
             r2 = self.num_removed_effects[1]
             num_removed_effects = torch.round((r1 - r2) * torch.rand(1) + r2).int()
-            effect_indices = effect_indices[:num_removed_effects]
+            start_idx = random.randint(0, max(0, len(effect_indices) - num_removed_effects))
+            effect_indices = effect_indices[start_idx:start_idx + num_removed_effects]
             # Index in effect settings
-            effect_names_to_apply = [self.effects_to_remove[i] for i in effect_indices]
+            effect_names_to_apply = [self.effects_to_remove[::-1][i] for i in effect_indices]
+            # print("effect_to_remove", effect_names_to_apply)
             effects_to_apply = [self.effects[i] for i in effect_names_to_apply]
             # Apply
             wet_labels = []
@@ -564,7 +499,7 @@ class EffectDataset(Dataset):
                 # Normalize in-between effects
                 wet = self.normalize(effect(wet))
                 wet_labels.append(ALL_EFFECTS.index(type(effect)))
-
+            
             wet_labels_tensor = torch.zeros(len(ALL_EFFECTS))
             dry_labels_tensor = torch.zeros(len(ALL_EFFECTS))
 
