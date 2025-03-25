@@ -1,8 +1,9 @@
-import pytorch_lightning as pl
 import hydra
-from omegaconf import DictConfig
-import remfx.utils as utils
+import pytorch_lightning as pl
 import torch
+from omegaconf import DictConfig
+
+import remfx.utils as utils
 
 log = utils.get_logger(__name__)
 
@@ -17,7 +18,7 @@ def main(cfg: DictConfig):
     log.info(f"Instantiating model <{cfg.model._target_}>.")
     model = hydra.utils.instantiate(cfg.model, _convert_="partial")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    state_dict = torch.load(cfg.ckpt_path, map_location=device)[
+    state_dict = torch.load(cfg.ckpt_path, map_location=device, weights_only=True)[
         "state_dict"
     ]
     model.load_state_dict(state_dict)

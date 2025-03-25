@@ -20,7 +20,7 @@ def load_model(model_file_path, device=None):
     model.to(device)
 
     # Set model weights using checkpoint file
-    checkpoint = torch.load(model_file_path, map_location=device)
+    checkpoint = torch.load(model_file_path, map_location=device, weights_only=True)
     model.load_state_dict(checkpoint['model'])
 
     model.sample_rate = 32000  # Input sample rate

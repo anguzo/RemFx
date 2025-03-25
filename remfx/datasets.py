@@ -393,8 +393,8 @@ class EffectDataset(Dataset):
     def __getitem__(self, idx):
         input_file = self.proc_root / str(idx) / "input.wav"
         target_file = self.proc_root / str(idx) / "target.wav"
-        dry_effect_names = torch.load(self.proc_root / str(idx) / "dry_effects.pt")
-        wet_effect_names = torch.load(self.proc_root / str(idx) / "wet_effects.pt")
+        dry_effect_names = torch.load(self.proc_root / str(idx) / "dry_effects.pt", weights_only=True)
+        wet_effect_names = torch.load(self.proc_root / str(idx) / "wet_effects.pt", weights_only=True)
         input, sr = torchaudio.load(input_file)
         target, sr = torchaudio.load(target_file)
         return (input, target, dry_effect_names, wet_effect_names)

@@ -1,8 +1,9 @@
 import hydra
-from omegaconf import DictConfig
 import torch
-from remfx.models import RemFXChainInference
 import torchaudio
+from omegaconf import DictConfig
+
+from remfx.models import RemFXChainInference
 
 
 @hydra.main(
@@ -17,7 +18,7 @@ def main(cfg: DictConfig):
         model = hydra.utils.instantiate(cfg.ckpts[effect].model, _convert_="partial")
         ckpt_path = cfg.ckpts[effect].ckpt_path
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        state_dict = torch.load(ckpt_path, map_location=device)["state_dict"]
+        state_dict = torch.load(ckpt_path, map_location=device, weights_only=True)["state_dict"]
         model.load_state_dict(state_dict)
         model.to(device)
         models[effect] = model
@@ -25,7 +26,7 @@ def main(cfg: DictConfig):
     classifier = hydra.utils.instantiate(cfg.classifier, _convert_="partial")
     ckpt_path = cfg.classifier_ckpt
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    state_dict = torch.load(ckpt_path, map_location=device)["state_dict"]
+    state_dict = torch.load(ckpt_path, map_location=device, weights_only=True)["state_dict"]
     classifier.load_state_dict(state_dict)
     classifier.to(device)
 
