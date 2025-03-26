@@ -50,10 +50,6 @@ class AudioCallback(Callback):
                         self.log(f"{'_'.join(label)}", 0.0)
                 else:
                     y = pl_module.model.sample(x)
-            # Concat samples together for easier viewing in dashboard
-            # 2 seconds of silence between each sample
-            silence = torch.zeros_like(x)
-            silence = silence[:, : self.sample_rate * 2]
 
             log_tensorboard_audio_batch(
                 logger=trainer.logger,
@@ -67,6 +63,7 @@ class AudioCallback(Callback):
 
     def on_test_batch_start(self, *args):
         self.on_validation_batch_start(*args)
+
 
 def log_tensorboard_audio_batch(
     logger: pl.loggers.TensorBoardLogger,
@@ -100,7 +97,7 @@ def log_tensorboard_audio_batch(
             global_step=global_step,
             sample_rate=sample_rate,
         )
-    
+
         recovered = y_pred[i]
 
         logger.experiment.add_audio(

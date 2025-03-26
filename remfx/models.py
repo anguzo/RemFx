@@ -35,8 +35,8 @@ class RemFXChainInference(pl.LightningModule):
         self.l1loss = nn.L1Loss()
         self.metrics = nn.ModuleDict(
             {
-                "SISDR": SISDRLoss(),
-                "STFT": MultiResolutionSTFTLoss(),
+                "si_sdr": SISDRLoss(),
+                "aura_mrstft": MultiResolutionSTFTLoss(),
             }
         )
         self.sample_rate = sample_rate
@@ -224,7 +224,7 @@ class RemFX(pl.LightningModule):
         with torch.no_grad():
             for metric in self.metrics:
                 # SISDR returns negative values, so negate them
-                if metric == "SISDR":
+                if metric == "si_sdr":
                     negate = -1
                 else:
                     negate = 1
@@ -271,6 +271,7 @@ class DemucsModel(nn.Module):
 
     def sample(self, x: Tensor) -> Tensor:
         return self.model(x).squeeze(1)
+
 
 def mixup(x: torch.Tensor, y: torch.Tensor, alpha: float = 1.0):
     """Mixup data augmentation for time-domain signals.
@@ -327,15 +328,15 @@ class FXClassifier(pl.LightningModule):
 
             self.metrics = torch.nn.ModuleDict()
             for effect in self.effects:
-                self.metrics[
-                    f"train/{effect}_acc"
-                ] = torchmetrics.classification.Accuracy(task="binary")
-                self.metrics[
-                    f"valid/{effect}_acc"
-                ] = torchmetrics.classification.Accuracy(task="binary")
-                self.metrics[
-                    f"test/{effect}_acc"
-                ] = torchmetrics.classification.Accuracy(task="binary")
+                self.metrics[f"train/{effect}_acc"] = (
+                    torchmetrics.classification.Accuracy(task="binary")
+                )
+                self.metrics[f"valid/{effect}_acc"] = (
+                    torchmetrics.classification.Accuracy(task="binary")
+                )
+                self.metrics[f"test/{effect}_acc"] = (
+                    torchmetrics.classification.Accuracy(task="binary")
+                )
         else:
             self.loss_fn = torch.nn.CrossEntropyLoss(label_smoothing=label_smoothing)
             self.train_f1 = torchmetrics.classification.MultilabelF1Score(
