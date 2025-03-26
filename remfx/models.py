@@ -21,7 +21,6 @@ class RemFXChainInference(pl.LightningModule):
         self,
         models,
         sample_rate,
-        num_bins,
         effect_order,
         classifier=None,
         shuffle_effect_order=False,
@@ -30,13 +29,27 @@ class RemFXChainInference(pl.LightningModule):
         super().__init__()
         self.model = models
         self.mrstftloss = MultiResolutionSTFTLoss(
-            n_bins=num_bins, sample_rate=sample_rate
+            fft_sizes=[1024, 2048, 4096],
+            hop_sizes=[256, 512, 1024],
+            win_lengths=[1024, 2048, 4096],
+            scale="mel",
+            n_bins=128,
+            sample_rate=sample_rate,
+            perceptual_weighting=True,
         )
         self.l1loss = nn.L1Loss()
         self.metrics = nn.ModuleDict(
             {
                 "si_sdr": SISDRLoss(),
-                "aura_mrstft": MultiResolutionSTFTLoss(),
+                "aura_mrstft": MultiResolutionSTFTLoss(
+                    fft_sizes=[1024, 2048, 4096],
+                    hop_sizes=[256, 512, 1024],
+                    win_lengths=[1024, 2048, 4096],
+                    scale="mel",
+                    n_bins=128,
+                    sample_rate=sample_rate,
+                    perceptual_weighting=True,
+                ),
             }
         )
         self.sample_rate = sample_rate
@@ -168,7 +181,15 @@ class RemFX(pl.LightningModule):
         self.metrics = nn.ModuleDict(
             {
                 "si_sdr": SISDRLoss(),
-                "aura_mrstft": MultiResolutionSTFTLoss(),
+                "aura_mrstft": MultiResolutionSTFTLoss(
+                    fft_sizes=[1024, 2048, 4096],
+                    hop_sizes=[256, 512, 1024],
+                    win_lengths=[1024, 2048, 4096],
+                    scale="mel",
+                    n_bins=128,
+                    sample_rate=sample_rate,
+                    perceptual_weighting=True,
+                ),
             }
         )
         # Log first batch metrics input vs output only once
@@ -257,9 +278,14 @@ class DemucsModel(nn.Module):
     def __init__(self, sample_rate, **kwargs) -> None:
         super().__init__()
         self.model = HDemucs(**kwargs)
-        self.num_bins = kwargs["nfft"] // 2 + 1
         self.mrstftloss = MultiResolutionSTFTLoss(
-            n_bins=self.num_bins, sample_rate=sample_rate
+            fft_sizes=[1024, 2048, 4096],
+            hop_sizes=[256, 512, 1024],
+            win_lengths=[1024, 2048, 4096],
+            scale="mel",
+            n_bins=128,
+            sample_rate=sample_rate,
+            perceptual_weighting=True,
         )
         self.l1loss = nn.L1Loss()
 

@@ -22,7 +22,9 @@ def main(cfg: DictConfig):
         model = hydra.utils.instantiate(cfg.ckpts[effect].model, _convert_="partial")
         ckpt_path = cfg.ckpts[effect].ckpt_path
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        state_dict = torch.load(ckpt_path, map_location=device, weights_only=True)["state_dict"]
+        state_dict = torch.load(ckpt_path, map_location=device, weights_only=True)[
+            "state_dict"
+        ]
         model.load_state_dict(state_dict)
         model.to(device)
         models[effect] = model
@@ -33,7 +35,9 @@ def main(cfg: DictConfig):
         classifier = hydra.utils.instantiate(cfg.classifier, _convert_="partial")
         ckpt_path = cfg.classifier_ckpt
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        state_dict = torch.load(ckpt_path, map_location=device, weights_only=True)["state_dict"]
+        state_dict = torch.load(ckpt_path, map_location=device, weights_only=True)[
+            "state_dict"
+        ]
         classifier.load_state_dict(state_dict)
         classifier.to(device)
 
@@ -64,7 +68,6 @@ def main(cfg: DictConfig):
     inference_model = RemFXChainInference(
         models,
         sample_rate=cfg.sample_rate,
-        num_bins=cfg.num_bins,
         effect_order=cfg.inference_effects_ordering,
         classifier=classifier,
         shuffle_effect_order=cfg.inference_effects_shuffle,
