@@ -181,4 +181,6 @@ slurm-*.stat
 dcgm-gpu-stats-*.out
 
 data/
-outputs/
+logs/
+lightning_logs/
+hydra_logs/
