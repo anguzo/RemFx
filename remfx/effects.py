@@ -652,24 +652,24 @@ class RandomAudioEffectsChannel(torch.nn.Module):
                     p=parametric_eq_prob,
                 ),
                 RandomApply(
+                    [RandomPedalboardCompressor(sample_rate)],
+                    p=compressor_prob,
+                ),
+                RandomApply(
                     [RandomPedalboardDistortion(sample_rate)],
                     p=distortion_prob,
-                ),
-                RandomApply(
-                    [RandomPedalboardDelay(sample_rate)],
-                    p=delay_prob,
-                ),
-                RandomApply(
-                    [RandomPedalboardChorus(sample_rate)],
-                    p=chorus_prob,
                 ),
                 RandomApply(
                     [RandomPedalboardPhaser(sample_rate)],
                     p=phaser_prob,
                 ),
                 RandomApply(
-                    [RandomPedalboardCompressor(sample_rate)],
-                    p=compressor_prob,
+                    [RandomPedalboardChorus(sample_rate)],
+                    p=chorus_prob,
+                ),
+                RandomApply(
+                    [RandomPedalboardDelay(sample_rate)],
+                    p=delay_prob,
                 ),
                 RandomApply(
                     [RandomPedalboardReverb(sample_rate)],
@@ -696,11 +696,11 @@ class RandomAudioEffectsChannel(torch.nn.Module):
 
 
 Pedalboard_Effects = [
-    RandomPedalboardReverb,
-    RandomPedalboardChorus,
-    RandomPedalboardDelay,
-    RandomPedalboardDistortion,
     RandomPedalboardCompressor,
-    # RandomPedalboardPhaser,
+    RandomPedalboardDistortion,
+    RandomPedalboardPhaser,
+    RandomPedalboardChorus,
+    RandomPedalboardDelay,    
+    RandomPedalboardReverb,
     # RandomPedalboardLimiter,
 ]
