@@ -113,17 +113,17 @@ class RemFXChainInference(pl.LightningModule):
         # Crop target to match output
         if output.shape[-1] < y.shape[-1]:
             y = causal_crop(y, output.shape[-1])
-        self.log("test_loss", loss)
+        self.log("test/loss", loss)
         # Metric logging
         with torch.no_grad():
             for metric in self.metrics:
                 # SISDR returns negative values, so negate them
-                if metric == "SISDR":
+                if metric == "si_sdr":
                     negate = -1
                 else:
                     negate = 1
                 self.log(
-                    f"test_{metric}",  # + "".join(self.effect_order).replace("RandomPedalboard", ""),
+                    f"test/{metric}",  # + "".join(self.effect_order).replace("RandomPedalboard", ""),
                     negate * self.metrics[metric](output, y),
                     on_step=False,
                     on_epoch=True,
@@ -196,7 +196,7 @@ class RemFX(pl.LightningModule):
             "optimizer": optimizer,
             "lr_scheduler": {
                 "scheduler": lr_scheduler,
-                "monitor": "val_loss",
+                "monitor": "val/loss",
                 "interval": "step",
                 "frequency": 1,
             },
@@ -219,7 +219,7 @@ class RemFX(pl.LightningModule):
         target = y
         if output.shape[-1] < y.shape[-1]:
             target = causal_crop(y, output.shape[-1])
-        self.log(f"{mode}_loss", loss)
+        self.log(f"{mode}/loss", loss)
         # Metric logging
         with torch.no_grad():
             for metric in self.metrics:
@@ -232,7 +232,7 @@ class RemFX(pl.LightningModule):
                 if metric == "FAD" and mode != "test":
                     continue
                 self.log(
-                    f"{mode}_{metric}",
+                    f"{mode}/{metric}",
                     negate * self.metrics[metric](output, target),
                     on_step=False,
                     on_epoch=True,
@@ -328,13 +328,13 @@ class FXClassifier(pl.LightningModule):
             self.metrics = torch.nn.ModuleDict()
             for effect in self.effects:
                 self.metrics[
-                    f"train_{effect}_acc"
+                    f"train/{effect}_acc"
                 ] = torchmetrics.classification.Accuracy(task="binary")
                 self.metrics[
-                    f"valid_{effect}_acc"
+                    f"valid/{effect}_acc"
                 ] = torchmetrics.classification.Accuracy(task="binary")
                 self.metrics[
-                    f"test_{effect}_acc"
+                    f"test/{effect}_acc"
                 ] = torchmetrics.classification.Accuracy(task="binary")
         else:
             self.loss_fn = torch.nn.CrossEntropyLoss(label_smoothing=label_smoothing)
@@ -395,7 +395,7 @@ class FXClassifier(pl.LightningModule):
                 loss = self.loss_fn(outputs, wet_label)
 
         self.log(
-            f"{mode}_loss",
+            f"{mode}/loss",
             loss,
             on_step=True,
             on_epoch=True,
@@ -407,11 +407,11 @@ class FXClassifier(pl.LightningModule):
         if isinstance(self.network, Cnn14):
             acc_metrics = []
             for idx, effect_name in enumerate(self.effects):
-                acc_metric = self.metrics[f"{mode}_{effect_name}_acc"](
+                acc_metric = self.metrics[f"{mode}/{effect_name}_acc"](
                     outputs[idx].squeeze(-1), wet_label[..., idx]
                 )
                 self.log(
-                    f"{mode}_{effect_name}_acc",
+                    f"{mode}/{effect_name}_acc",
                     acc_metric,
                     on_step=True,
                     on_epoch=True,
@@ -422,7 +422,7 @@ class FXClassifier(pl.LightningModule):
                 acc_metrics.append(acc_metric)
 
             self.log(
-                f"{mode}_avg_acc",
+                f"{mode}/avg_acc",
                 torch.mean(torch.stack(acc_metrics)),
                 on_step=True,
                 on_epoch=True,
@@ -434,7 +434,7 @@ class FXClassifier(pl.LightningModule):
             metrics = self.metrics[mode](torch.sigmoid(outputs), wet_label.long())
             for idx, effect_name in enumerate(self.effects):
                 self.log(
-                    f"{mode}_f1_{effect_name}",
+                    f"{mode}/f1_{effect_name}",
                     metrics[idx],
                     on_step=True,
                     on_epoch=True,
@@ -447,7 +447,7 @@ class FXClassifier(pl.LightningModule):
             )
 
             self.log(
-                f"{mode}_avg_acc",
+                f"{mode}/avg_acc",
                 avg_metrics,
                 on_step=True,
                 on_epoch=True,

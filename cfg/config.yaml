@@ -35,13 +35,13 @@ effects_to_remove:
 callbacks:
   model_checkpoint:
     _target_: pytorch_lightning.callbacks.ModelCheckpoint
-    monitor: "valid_loss" # name of the logged metric which determines when model is improving
+    monitor: "valid/loss" # name of the logged metric which determines when model is improving
     save_top_k: 1 # save k best models (determined by above metric)
     save_last: True # additionaly always save model from last epoch
     mode: "min" # can be "max" or "min"
     verbose: False
     dirpath: ${logs_dir}/${oc.env:SLURM_JOB_ID, ${now:%Y-%m-%d-%H-%M-%S}}/ckpts
-    filename: "{epoch:02d}-{valid_loss:.3f}"
+    filename: "{epoch:02d}-{valid/loss:.3f}"
   learning_rate_monitor:
     _target_: pytorch_lightning.callbacks.LearningRateMonitor
     logging_interval: "step"
@@ -49,6 +49,11 @@ callbacks:
     _target_: remfx.callbacks.AudioCallback
     sample_rate: ${sample_rate}
     log_audio: ${log_audio}
+  early_stopping:
+    _target_: pytorch_lightning.callbacks.EarlyStopping
+    monitor: "valid/loss"
+    patience: 10
+    mode: "min"
 
 datamodule:
   _target_: remfx.datasets.EffectDatamodule
