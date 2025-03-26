@@ -1,6 +1,8 @@
+import os
 from typing import List
 
 import numpy as np
+import pandas as pd
 import pyloudnorm as pyln
 import scipy.signal
 import scipy.stats
@@ -499,17 +501,69 @@ class RandomPedalboardDistortion(torch.nn.Module):
         sample_rate: float,
         min_drive_db: float = -20.0,
         max_drive_db: float = 12.0,
+        use_nn_distortion: bool = False,
     ):
         super().__init__()
-        self.sample_rate = sample_rate
-        self.min_drive_db = min_drive_db
-        self.max_drive_db = max_drive_db
+        self.use_nn_distortion = use_nn_distortion
+        if not self.use_nn_distortion:
+            self.sample_rate = sample_rate
+            self.min_drive_db = min_drive_db
+            self.max_drive_db = max_drive_db
+        else:
+            from .openamp import TCN, GatedTCNLayerFilmConditioned
+
+            check_dir = "openamp"
+
+            model_dir = os.path.join(check_dir, f"model_weights_ep-9.pt")
+            config = {
+                "layer_class": GatedTCNLayerFilmConditioned,
+                "channels": 16,
+                "blocks": 2,
+                "layers": 8,
+                "dilation_growth": 2,
+                "kernel_size": 3,
+                "cond_pars": 64,
+                "emb_dim": 64,
+            }
+
+            self.df = pd.read_csv(
+                os.path.join(check_dir, "train_index.csv"), index_col=0
+            )
+            self.num_devices = self.df.shape[0]
+
+            self.device_ids = list(range(self.num_devices))
+            np.random.shuffle(self.device_ids)
+            self.current_idx = 0
+
+            state_dict = torch.load(
+                model_dir, map_location=torch.device("cpu"), weights_only=True
+            )
+            self.model = TCN(**config, num_emb=self.num_devices)
+            self.model.load_state_dict(state_dict)
 
     def forward(self, x: torch.Tensor):
-        board = Pedalboard()
-        drive_db = rand(self.min_drive_db, self.max_drive_db)
-        board.append(Distortion(drive_db=drive_db))
-        return torch.from_numpy(board(x.numpy(), self.sample_rate))
+        if not self.use_nn_distortion:
+            board = Pedalboard()
+            drive_db = rand(self.min_drive_db, self.max_drive_db)
+            board.append(Distortion(drive_db=drive_db))
+            return torch.from_numpy(board(x.numpy(), self.sample_rate))
+        else:
+            device_id = self.device_ids[self.current_idx]
+
+            self.current_idx = (self.current_idx + 1) % self.num_devices
+
+            if self.current_idx == 0:
+                np.random.shuffle(self.device_ids)
+
+            if x.dim() == 2:
+                x = x.unsqueeze(0)
+
+            y = self.model.proc_with_emb_id(x, device_id)
+
+            if y.dim() == 3:
+                y = y.squeeze(0)
+
+            return y.detach()
 
 
 class RandomSoxReverb(torch.nn.Module):
@@ -700,7 +754,7 @@ Pedalboard_Effects = [
     RandomPedalboardDistortion,
     RandomPedalboardPhaser,
     RandomPedalboardChorus,
-    RandomPedalboardDelay,    
+    RandomPedalboardDelay,
     RandomPedalboardReverb,
     # RandomPedalboardLimiter,
 ]
