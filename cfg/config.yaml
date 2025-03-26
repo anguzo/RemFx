@@ -1,8 +1,12 @@
+hydra:
+  run:
+    dir: hydra_logs/${oc.env:SLURM_JOB_ID, ${now:%Y-%m-%d-%H-%M-%S}}
+
 defaults:
   - _self_
   - model: null
   - effects: all
-  - logger: csv
+  - logger: tensorboard
 
 seed: 12345
 train: True
@@ -36,7 +40,7 @@ callbacks:
     save_last: True # additionaly always save model from last epoch
     mode: "min" # can be "max" or "min"
     verbose: False
-    dirpath: ${logs_dir}/${now:%Y-%m-%d-%H-%M-%S}/ckpts
+    dirpath: ${logs_dir}/${oc.env:SLURM_JOB_ID, ${now:%Y-%m-%d-%H-%M-%S}}/ckpts
     filename: "{epoch:02d}-{valid_loss:.3f}"
   learning_rate_monitor:
     _target_: pytorch_lightning.callbacks.LearningRateMonitor
