@@ -13,6 +13,8 @@ from remfx import effects
 from remfx.classifier import Cnn14
 from remfx.utils import causal_crop
 
+from .htdemucs import HTDemucs
+
 ALL_EFFECTS = effects.Pedalboard_Effects
 
 
@@ -278,6 +280,31 @@ class DemucsModel(nn.Module):
     def __init__(self, sample_rate, **kwargs) -> None:
         super().__init__()
         self.model = HDemucs(**kwargs)
+        self.mrstftloss = MultiResolutionSTFTLoss(
+            fft_sizes=[1024, 2048, 4096],
+            hop_sizes=[256, 512, 1024],
+            win_lengths=[1024, 2048, 4096],
+            scale="mel",
+            n_bins=128,
+            sample_rate=sample_rate,
+            perceptual_weighting=True,
+        )
+        self.l1loss = nn.L1Loss()
+
+    def forward(self, batch):
+        x, target = batch
+        output = self.model(x).squeeze(1)
+        loss = self.mrstftloss(output, target) + self.l1loss(output, target) * 100
+        return loss, output
+
+    def sample(self, x: Tensor) -> Tensor:
+        return self.model(x).squeeze(1)
+
+
+class HTDemucsModel(nn.Module):
+    def __init__(self, sample_rate, **kwargs) -> None:
+        super().__init__()
+        self.model = HTDemucs(**kwargs)
         self.mrstftloss = MultiResolutionSTFTLoss(
             fft_sizes=[1024, 2048, 4096],
             hop_sizes=[256, 512, 1024],
