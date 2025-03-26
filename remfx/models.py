@@ -131,15 +131,15 @@ class RemFXChainInference(pl.LightningModule):
                     prog_bar=True,
                     sync_dist=True,
                 )
-                self.log(
-                    f"Input_{metric}",
-                    negate * self.metrics[metric](x, y),
-                    on_step=False,
-                    on_epoch=True,
-                    logger=True,
-                    prog_bar=True,
-                    sync_dist=True,
-                )
+                # self.log(
+                #     f"Input_{metric}",
+                #     negate * self.metrics[metric](x, y),
+                #     on_step=False,
+                #     on_epoch=True,
+                #     logger=True,
+                #     prog_bar=True,
+                #     sync_dist=True,
+                # )
         return loss
 
     def sample(self, batch):
@@ -167,8 +167,8 @@ class RemFX(pl.LightningModule):
         self.model = network
         self.metrics = nn.ModuleDict(
             {
-                "SISDR": SISDRLoss(),
-                "STFT": MultiResolutionSTFTLoss(),
+                "si_sdr": SISDRLoss(),
+                "aura_mrstft": MultiResolutionSTFTLoss(),
             }
         )
         # Log first batch metrics input vs output only once
@@ -241,15 +241,15 @@ class RemFX(pl.LightningModule):
                     sync_dist=True,
                 )
 
-                self.log(
-                    f"Input_{metric}",
-                    negate * self.metrics[metric](x, y),
-                    on_step=False,
-                    on_epoch=True,
-                    logger=True,
-                    prog_bar=True,
-                    sync_dist=True,
-                )
+                # self.log(
+                #     f"Input_{metric}",
+                #     negate * self.metrics[metric](x, y),
+                #     on_step=False,
+                #     on_epoch=True,
+                #     logger=True,
+                #     prog_bar=True,
+                #     sync_dist=True,
+                # )
         return loss
 
 
